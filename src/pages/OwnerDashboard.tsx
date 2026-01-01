@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
@@ -12,16 +12,43 @@ import {
 } from '@/components/ui/select';
 import { venues, type Venue } from '@/data/venues';
 import { toast } from '@/hooks/use-toast';
+import { 
+  getStoredAvailability, 
+  getAllVenueAvailability, 
+  updateVenueAvailability 
+} from '@/lib/venueAvailability';
 
 export default function OwnerDashboard() {
   const [selectedVenueId, setSelectedVenueId] = useState<string>(venues[0]?.id || '');
-  const [venueAvailability, setVenueAvailability] = useState<Record<string, Venue['availability']>>(
-    Object.fromEntries(venues.map(v => [v.id, { ...v.availability }]))
-  );
+  const [venueAvailability, setVenueAvailability] = useState<Record<string, Venue['availability']>>(() => {
+    // Initialize with stored availability merged with default
+    const stored = getStoredAvailability();
+    return Object.fromEntries(
+      venues.map(v => [
+        v.id, 
+        getAllVenueAvailability(v.id, v.availability)
+      ])
+    );
+  });
 
   const selectedVenue = venues.find(v => v.id === selectedVenueId);
 
+  // Load stored availability when venue changes
+  useEffect(() => {
+    if (selectedVenueId && selectedVenue) {
+      const mergedAvailability = getAllVenueAvailability(selectedVenueId, selectedVenue.availability);
+      setVenueAvailability(prev => ({
+        ...prev,
+        [selectedVenueId]: mergedAvailability,
+      }));
+    }
+  }, [selectedVenueId]);
+
   const handleAvailabilityChange = (date: string, type: 'day' | 'night', available: boolean) => {
+    // Update localStorage
+    updateVenueAvailability(selectedVenueId, date, type, available);
+
+    // Update local state
     setVenueAvailability(prev => {
       const venueAvail = prev[selectedVenueId] || {};
       const dateAvail = venueAvail[date] || { day: true, night: true };

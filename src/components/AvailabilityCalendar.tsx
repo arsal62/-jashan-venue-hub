@@ -93,8 +93,8 @@ export function AvailabilityCalendar({
           booked: (date) => !getDateAvailability(date),
         }}
         modifiersClassNames={{
-          available: 'bg-available/20 text-available hover:bg-available/30',
-          booked: 'bg-booked/20 text-booked hover:bg-booked/30',
+          available: 'bg-available/30 text-available font-medium hover:bg-available/40 border-available/50',
+          booked: 'bg-booked/30 text-booked font-medium hover:bg-booked/40 border-booked/50',
         }}
         disabled={(date) => date < new Date()}
       />

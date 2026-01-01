@@ -7,18 +7,33 @@ import { venues } from '@/data/venues';
 interface SearchBarProps {
   variant?: 'hero' | 'header';
   onSearch?: (query: string) => void;
+  value?: string;
+  onChange?: (query: string) => void;
 }
 
-export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
-  const [query, setQuery] = useState('');
+export function SearchBar({ variant = 'hero', onSearch, value, onChange }: SearchBarProps) {
+  const [internalQuery, setInternalQuery] = useState('');
   const [suggestions, setSuggestions] = useState<typeof venues>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Use controlled value if provided, otherwise use internal state
+  const query = value !== undefined ? value : internalQuery;
+  const setQuery = (newQuery: string) => {
+    if (onChange) {
+      onChange(newQuery);
+    } else {
+      setInternalQuery(newQuery);
+    }
+    if (onSearch) {
+      onSearch(newQuery);
+    }
+  };
+
   useEffect(() => {
-    if (query.length > 0) {
+    if (query.length > 0 && variant === 'hero') {
       const filtered = venues.filter(venue =>
         venue.name.toLowerCase().includes(query.toLowerCase()) ||
         venue.area.toLowerCase().includes(query.toLowerCase())
@@ -30,7 +45,7 @@ export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
       setIsOpen(false);
     }
     setSelectedIndex(-1);
-  }, [query]);
+  }, [query, variant]);
 
   const handleSelect = (venueId: string) => {
     navigate(`/venue/${venueId}`);
@@ -78,7 +93,7 @@ export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => query.length > 0 && setIsOpen(true)}
+          onFocus={() => query.length > 0 && variant === 'hero' && setIsOpen(true)}
           placeholder="Search venues by name or area..."
           className={`
             flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground
@@ -88,7 +103,7 @@ export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
       </div>
 
       <AnimatePresence>
-        {isOpen && suggestions.length > 0 && (
+        {isOpen && suggestions.length > 0 && variant === 'hero' && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,7 +141,7 @@ export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
         )}
       </AnimatePresence>
 
-      {isOpen && (
+      {isOpen && variant === 'hero' && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}

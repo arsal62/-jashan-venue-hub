@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { venues } from '@/data/venues';
+import { getAllVenueAvailability } from '@/lib/venueAvailability';
 import heroImage from '@/assets/hero-wedding.jpg';
 
 export default function VenueDetail() {
@@ -30,7 +31,16 @@ export default function VenueDetail() {
 
   const venue = venues.find(v => v.id === id);
 
-  if (!venue) {
+  // Merge stored availability with venue data
+  const venueWithAvailability = useMemo(() => {
+    if (!venue) return null;
+    return {
+      ...venue,
+      availability: getAllVenueAvailability(venue.id, venue.availability),
+    };
+  }, [venue]);
+
+  if (!venue || !venueWithAvailability) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -47,6 +57,9 @@ export default function VenueDetail() {
     }
     return price.toLocaleString();
   };
+
+  // Use venueWithAvailability throughout the component
+  const displayVenue = venueWithAvailability;
 
   const facilities = [
     { key: 'parking', icon: Car, label: 'Parking' },
@@ -66,18 +79,18 @@ export default function VenueDetail() {
 
   const getWhatsAppLink = () => {
     const message = selectedDate
-      ? `Hi! I'm interested in booking ${venue.name} for a ${selectedEventType} event on ${selectedDate.toLocaleDateString('en-US', { 
+      ? `Hi! I'm interested in booking ${displayVenue.name} for a ${selectedEventType} event on ${selectedDate.toLocaleDateString('en-US', { 
           weekday: 'long', 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric' 
         })}. Please let me know about availability and pricing.`
-      : `Hi! I'm interested in booking ${venue.name}. Please share more details about availability and pricing.`;
+      : `Hi! I'm interested in booking ${displayVenue.name}. Please share more details about availability and pricing.`;
     
-    return `https://wa.me/${venue.whatsappNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${displayVenue.whatsappNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
   };
 
-  const allImages = [heroImage, ...venue.images];
+  const allImages = [heroImage, ...displayVenue.images];
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,19 +127,19 @@ export default function VenueDetail() {
               animate={{ opacity: 1, y: 0 }}
             >
               <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
-                {venue.name}
+                {displayVenue.name}
               </h1>
               <div className="flex flex-wrap items-center gap-4 text-primary-foreground/80">
                 <span className="flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  {venue.area}
+                  {displayVenue.area}
                 </span>
                 <span className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  Up to {venue.capacity} guests
+                  Up to {displayVenue.capacity} guests
                 </span>
                 <Badge className="bg-primary text-primary-foreground">
-                  PKR {formatPrice(venue.priceRange.min)} - {formatPrice(venue.priceRange.max)}
+                  PKR {formatPrice(displayVenue.priceRange.min)} - {formatPrice(displayVenue.priceRange.max)}
                 </Badge>
               </div>
             </motion.div>
@@ -164,7 +177,7 @@ export default function VenueDetail() {
             >
               <h2 className="font-display text-2xl font-semibold mb-4">About This Venue</h2>
               <p className="text-muted-foreground leading-relaxed">
-                {venue.description}
+                {displayVenue.description}
               </p>
             </motion.section>
 
@@ -177,7 +190,7 @@ export default function VenueDetail() {
               <h2 className="font-display text-2xl font-semibold mb-6">Facilities & Amenities</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {facilities.map(({ key, icon: Icon, label }) => {
-                  const isAvailable = venue.facilities[key];
+                  const isAvailable = displayVenue.facilities[key];
                   return (
                     <div
                       key={key}
@@ -221,7 +234,7 @@ export default function VenueDetail() {
                   >
                     <img
                       src={image}
-                      alt={`${venue.name} - Image ${index + 1}`}
+                      alt={`${displayVenue.name} - Image ${index + 1}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors" />
@@ -243,7 +256,7 @@ export default function VenueDetail() {
               <div className="bg-card rounded-2xl border border-border p-6">
                 <h3 className="font-display text-xl font-semibold mb-4">Check Availability</h3>
                 <AvailabilityCalendar
-                  venue={venue}
+                  venue={venueWithAvailability}
                   onDateSelect={handleDateSelect}
                 />
               </div>
