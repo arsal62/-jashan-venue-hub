@@ -7,33 +7,18 @@ import { venues } from '@/data/venues';
 interface SearchBarProps {
   variant?: 'hero' | 'header';
   onSearch?: (query: string) => void;
-  value?: string;
-  onChange?: (query: string) => void;
 }
 
-export function SearchBar({ variant = 'hero', onSearch, value, onChange }: SearchBarProps) {
-  const [internalQuery, setInternalQuery] = useState('');
+export function SearchBar({ variant = 'hero', onSearch }: SearchBarProps) {
+  const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<typeof venues>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Use controlled value if provided, otherwise use internal state
-  const query = value !== undefined ? value : internalQuery;
-  const setQuery = (newQuery: string) => {
-    if (onChange) {
-      onChange(newQuery);
-    } else {
-      setInternalQuery(newQuery);
-    }
-    if (onSearch) {
-      onSearch(newQuery);
-    }
-  };
-
   useEffect(() => {
-    if (query.length > 0 && variant === 'hero') {
+    if (query.length > 0) {
       const filtered = venues.filter(venue =>
         venue.name.toLowerCase().includes(query.toLowerCase()) ||
         venue.area.toLowerCase().includes(query.toLowerCase())
@@ -45,7 +30,7 @@ export function SearchBar({ variant = 'hero', onSearch, value, onChange }: Searc
       setIsOpen(false);
     }
     setSelectedIndex(-1);
-  }, [query, variant]);
+  }, [query]);
 
   const handleSelect = (venueId: string) => {
     navigate(`/venue/${venueId}`);
@@ -93,7 +78,7 @@ export function SearchBar({ variant = 'hero', onSearch, value, onChange }: Searc
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => query.length > 0 && variant === 'hero' && setIsOpen(true)}
+          onFocus={() => query.length > 0 && setIsOpen(true)}
           placeholder="Search venues by name or area..."
           className={`
             flex-1 bg-transparent border-none outline-none placeholder:text-muted-foreground
@@ -103,7 +88,7 @@ export function SearchBar({ variant = 'hero', onSearch, value, onChange }: Searc
       </div>
 
       <AnimatePresence>
-        {isOpen && suggestions.length > 0 && variant === 'hero' && (
+        {isOpen && suggestions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -141,7 +126,7 @@ export function SearchBar({ variant = 'hero', onSearch, value, onChange }: Searc
         )}
       </AnimatePresence>
 
-      {isOpen && variant === 'hero' && (
+      {isOpen && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}
